@@ -25,7 +25,6 @@ type Config struct {
 
 const (
 	Unhealthy = "health_status: unhealthy" // Unhealthy indicates that the container has a problem
-
 )
 
 func main() {
@@ -39,7 +38,6 @@ func main() {
 
 	eventFilters := filters.NewArgs()
 	eventFilters.Add("event", "health_status")
-	//eventFilters.Add("type", events.ContainerEventType)
 	eventFilters.Add("container", config.ContainerName)
 	messages, errs := cli.Events(context.Background(), types.EventsOptions{
 		Filters: eventFilters,
