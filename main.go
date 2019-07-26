@@ -2,95 +2,135 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
-	"github.com/joho/godotenv"
+	"github.com/jinzhu/configor"
 	_ "github.com/joho/godotenv/autoload"
 	"io"
-	"io/ioutil"
 	"log"
-	"net/http"
-	"os"
-	"strings"
+	"robots/ding_talk"
+	"sync"
 	"time"
 )
 
+// config
 type Config struct {
-	NotifyUrl     string
-	ContainerName string
+	NotifyUrls []string `required:"true"`
+	Filters    *Filters
+}
+type Filters struct {
+	Name  []string
+	Event []string
 }
 
 const (
-	Unhealthy = "health_status: unhealthy" // Unhealthy indicates that the container has a problem
+	Unhealthy = "health_status: unhealthy"
+	Healthy   = "health_status: healthy"
 )
 
 func main() {
-	log.Println("robot is starting...")
-
+	var (
+		config Config
+		err    error
+	)
 	cli, err := client.NewEnvClient()
-	if err != nil {
-		panic(err)
-	}
-	config := getNotifyConfig()
+	checkErr(err)
 
-	eventFilters := filters.NewArgs()
-	eventFilters.Add("event", "health_status")
-	eventFilters.Add("container", config.ContainerName)
+	err = configor.Load(&config, "config.yml")
+	checkErr(err)
+
+	// ding ding clients
+	dingClients := ding_talk.NewClients(config.NotifyUrls)
+
 	messages, errs := cli.Events(context.Background(), types.EventsOptions{
-		Filters: eventFilters,
+		Filters: buildFilters(config.Filters),
 	})
+	checkErr(err)
 
-loop:
-	for {
-		select {
-		case err := <-errs:
-			if err != nil && err != io.EOF {
-				log.Fatal(err)
-			}
-			break loop
-		case e := <-messages:
-			if e.Status == Unhealthy {
-				log.Printf("接收到容器不健康事件; message: %+v\n", e)
-				postNotify(e, config.NotifyUrl)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case err := <-errs:
+				if err != nil && err != io.EOF {
+					panic(err)
+				}
+			case e := <-messages:
+				markdown := ding_talk.MarkdownMessage{
+					MsgType: ding_talk.Markdown,
+					At: &ding_talk.At{
+						IsAtAll: true,
+					},
+				}
+				switch e.Status {
+				case Unhealthy:
+					markdown.Markdown.Title = "程序爆炸啦"
+					markdown.Markdown.Text = fmt.Sprintf("#### 服务爆炸啦\n"+
+						"> ID：%s\n\n"+
+						"> 名称：%s\n\n"+
+						"> 服务类型：%s\n"+
+						"> 服务状态：unhealthy\n"+
+						"> ![screenshot](http://ypdan.com:9000/file/fail.jpeg)\n"+
+						"> ###### %s发布 [来自叮叮通知](https://open-doc.dingtalk.com)\n", e.ID[:6], e.Actor.Attributes["name"], e.Type, timeFormat(e.Time))
+				case Healthy:
+					markdown.Markdown.Title = "程序恢复正常"
+					markdown.Markdown.Text = fmt.Sprintf("#### 程序已经恢复正常啦\n"+
+						"> ID：%s\n\n"+
+						"> 名称：%s\n\n"+
+						"> 服务类型：%s\n"+
+						"> 服务状态：healthy\n"+
+						"> ![screenshot](http://ypdan.com:9000/file/ok.jpeg)\n"+
+						"> ###### %s发布 [来自叮叮通知](https://open-doc.dingtalk.com)\n", e.ID[:6], e.Actor.Attributes["name"], e.Type, timeFormat(e.Time))
+				default:
+					continue
+				}
+				for _, c := range dingClients {
+					//resp, _ := c.Execute(markdown)
+					//if resp.ErrCode != 0 {
+					//	checkInfo(errors.New(fmt.Sprintf("发送通知失败 err: %s\n", resp.ErrMsg)))
+					//}
+					go func(client ding_talk.DingTalkClient) {
+						resp, _ := client.Execute(markdown)
+						if resp.ErrCode != 0 {
+							checkInfo(errors.New(fmt.Sprintf("发送通知失败 err: %s\n", resp.ErrMsg)))
+						}
+					}(c)
+				}
 			}
 		}
-	}
+	}()
+	log.Println("Robot is running...")
+	log.Println("Waiting for docker event...")
+	wg.Wait()
 }
 
-func postNotify(msg events.Message, url string) {
-	body := strings.NewReader(fmt.Sprintf(`{"msgtype":"text","text":{"content":"@所有人 程序爆炸啦! Id: %s, Name: %s, Time: %s"}}`, msg.ID[0:6],
-		msg.Actor.Attributes["name"], time.Unix(msg.Time, 0).Format("2006-01-02 15:04:05")))
-	request := &http.Request{}
-	request, err := http.NewRequest(http.MethodPost, url, body)
-	if request == nil {
-		log.Fatal("request is nil")
-	}
-	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
-	resp, err := http.DefaultClient.Do(request)
-	checkErr(err)
-	respData, err := ioutil.ReadAll(resp.Body)
-	checkErr(err)
-	log.Printf("叮叮消息发送结果 %s\n", string(respData))
-	_ = resp.Body.Close()
+func timeFormat(timeInt int64) string {
+	t := time.Unix(timeInt, 0)
+	return fmt.Sprintf("%d月%d日%d时%d分%d秒", t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }
 
-func getNotifyConfig() Config {
-	var (
-		err error
-	)
-	err = godotenv.Load()
+func buildFilters(config *Filters) filters.Args {
+	body, err := json.Marshal(config)
 	checkErr(err)
-	config := Config{}
-	config.NotifyUrl = os.Getenv("NOTIFY_URL")
-	config.ContainerName = os.Getenv("CONTAINER_NAME")
-	return config
+	args, err := filters.FromParam(string(body))
+	checkErr(err)
+	return args
 }
 
 func checkErr(err error) {
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func checkInfo(err error) {
+	if err != nil {
+		log.Print(err)
 	}
 }

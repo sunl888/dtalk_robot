@@ -91,42 +91,42 @@ func TestNewClient(t *testing.T) {
 		}
 
 		Convey("测试发送 text 通知到叮叮机器人", func() {
-			response, err := client.execute(text)
+			response, err := client.Execute(text)
 			if err != nil {
 				panic(err)
 			}
 			So(0, ShouldEqual, response.ErrCode)
 		})
 		Convey("测试发送 link 通知到叮叮机器人", func() {
-			response, err := client.execute(link)
+			response, err := client.Execute(link)
 			if err != nil {
 				panic(err)
 			}
 			So(0, ShouldEqual, response.ErrCode)
 		})
 		Convey("测试发送 markdown 通知到叮叮机器人", func() {
-			response, err := client.execute(markdown)
+			response, err := client.Execute(markdown)
 			if err != nil {
 				panic(err)
 			}
 			So(0, ShouldEqual, response.ErrCode)
 		})
 		Convey("测试发送整体跳转的 ActionCard 通知到叮叮机器人", func() {
-			response, err := client.execute(singleActionCard)
+			response, err := client.Execute(singleActionCard)
 			if err != nil {
 				panic(err)
 			}
 			So(0, ShouldEqual, response.ErrCode)
 		})
 		Convey("测试发送独立跳转的 ActionCard 通知到叮叮机器人", func() {
-			response, err := client.execute(actionCard)
+			response, err := client.Execute(actionCard)
 			if err != nil {
 				panic(err)
 			}
 			So(0, ShouldEqual, response.ErrCode)
 		})
 		Convey("测试发送 FeedCard 通知到叮叮机器人", func() {
-			response, err := client.execute(feedCard)
+			response, err := client.Execute(feedCard)
 			if err != nil {
 				panic(err)
 			}

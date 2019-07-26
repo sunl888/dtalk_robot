@@ -1,0 +1,15 @@
+# 叮叮接收通知的群链接
+notifyurls:
+  - "https://oapi.dingtalk.com/robot/send?access_token=53a0461474c766e7cdd51206cc8efea29b9330441aec95b8b899f9a3ab95f4b2"
+  - "https://oapi.dingtalk.com/robot/send?access_token=f1ccc82a6df21007962649774eea13fbe8be3b91df822872b0f4eb9529581cdf"
+
+# docker 事件过滤
+filters:
+  name:
+    - demo
+    #    - ypdan
+
+  event:
+    - health_status
+#    - start
+#    - stop

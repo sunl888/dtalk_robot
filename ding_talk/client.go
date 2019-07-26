@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 )
 
 type DingTalkClient struct {
@@ -25,11 +26,19 @@ type RobotSendResponse struct {
 	ErrMsg  string `json:"errmsg"`
 }
 
-func NewClient(url string) *DingTalkClient {
-	return &DingTalkClient{gatewayUrl: url}
+func NewClient(url string) DingTalkClient {
+	return DingTalkClient{gatewayUrl: url}
 }
 
-func (d *DingTalkClient) execute(params interface{}) (RobotSendResponse, error) {
+func NewClients(urls []string) []DingTalkClient {
+	clients := make([]DingTalkClient, 0, len(urls))
+	for _, url := range urls {
+		clients = append(clients, DingTalkClient{gatewayUrl: url})
+	}
+	return clients
+}
+
+func (d *DingTalkClient) Execute(params interface{}) (RobotSendResponse, error) {
 	var (
 		response RobotSendResponse
 	)
@@ -58,7 +67,8 @@ func (d *DingTalkClient) execute(params interface{}) (RobotSendResponse, error) 
 	}
 
 	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
-	resp, err := http.DefaultClient.Do(request)
+	client := http.Client{Timeout: 3 * time.Second}
+	resp, err := client.Do(request)
 	if err != nil {
 		log.Printf("发送通知失败：%+v\n", err)
 		return response, err
