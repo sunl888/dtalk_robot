@@ -6,10 +6,12 @@ notifyurls:
 # docker 事件过滤
 filters:
   name:
-    - demo
-    #    - ypdan
+    - ypdan
 
   event:
     - health_status
 #    - start
 #    - stop
+
+  type:
+    - container

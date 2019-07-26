@@ -23,8 +23,9 @@ type Config struct {
 	Filters    *Filters
 }
 type Filters struct {
-	Name  []string
-	Event []string
+	Name  []string `json:"name"`
+	Event []string `json:"event"`
+	Type  []string `json:"type"`
 }
 
 const (
@@ -74,27 +75,28 @@ func main() {
 					markdown.Markdown.Text = fmt.Sprintf("#### 服务爆炸啦\n"+
 						"> ID：%s\n\n"+
 						"> 名称：%s\n\n"+
-						"> 服务类型：%s\n"+
-						"> 服务状态：unhealthy\n"+
-						"> ![screenshot](http://ypdan.com:9000/file/fail.jpeg)\n"+
-						"> ###### %s发布 [来自叮叮通知](https://open-doc.dingtalk.com)\n", e.ID[:6], e.Actor.Attributes["name"], e.Type, timeFormat(e.Time))
+						"> 服务状态：unhealthy\n\n"+
+						"> ![screenshot](http://ypdan.com:9000/file/fail.jpg)\n"+
+						"> ###### %s发布 [来自叮叮通知](https://open-doc.dingtalk.com)\n", e.ID[:8], e.Actor.Attributes["name"], timeFormat(e.Time))
 				case Healthy:
 					markdown.Markdown.Title = "程序恢复正常"
 					markdown.Markdown.Text = fmt.Sprintf("#### 程序已经恢复正常啦\n"+
 						"> ID：%s\n\n"+
 						"> 名称：%s\n\n"+
-						"> 服务类型：%s\n"+
-						"> 服务状态：healthy\n"+
+						"> 服务状态：healthy\n\n"+
 						"> ![screenshot](http://ypdan.com:9000/file/ok.jpeg)\n"+
-						"> ###### %s发布 [来自叮叮通知](https://open-doc.dingtalk.com)\n", e.ID[:6], e.Actor.Attributes["name"], e.Type, timeFormat(e.Time))
+						"> ###### %s发布 [来自叮叮通知](https://open-doc.dingtalk.com)\n", e.ID[:8], e.Actor.Attributes["name"], timeFormat(e.Time))
 				default:
 					continue
+					//markdown.Markdown.Title = "什么情况"
+					//markdown.Markdown.Text = fmt.Sprintf("#### 神经\n"+
+					//	"> ID：%s\n\n"+
+					//	"> 名称：%s\n\n"+
+					//	"> 服务状态：%s\n\n"+
+					//	"> ![screenshot](http://ypdan.com:9000/file/ok.jpeg)\n"+
+					//	"> ###### %s发布 [来自叮叮通知](https://open-doc.dingtalk.com)\n", e.ID, e.Actor.Attributes["name"], e.Status, timeFormat(e.Time))
 				}
 				for _, c := range dingClients {
-					//resp, _ := c.Execute(markdown)
-					//if resp.ErrCode != 0 {
-					//	checkInfo(errors.New(fmt.Sprintf("发送通知失败 err: %s\n", resp.ErrMsg)))
-					//}
 					go func(client ding_talk.DingTalkClient) {
 						resp, _ := client.Execute(markdown)
 						if resp.ErrCode != 0 {

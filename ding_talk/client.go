@@ -67,7 +67,7 @@ func (d *DingTalkClient) Execute(params interface{}) (RobotSendResponse, error) 
 	}
 
 	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
-	client := http.Client{Timeout: 3 * time.Second}
+	client := http.Client{Timeout: 1 * time.Second}
 	resp, err := client.Do(request)
 	if err != nil {
 		log.Printf("发送通知失败：%+v\n", err)
