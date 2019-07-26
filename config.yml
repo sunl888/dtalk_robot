@@ -6,7 +6,7 @@ notifyurls:
 # docker 事件过滤
 filters:
   name:
-    - ypdan
+    - helloworld
 
   event:
     - health_status

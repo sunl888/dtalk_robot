@@ -1,0 +1,15 @@
+version: "3.4"
+
+# 测试健康检查的容器，可以通过更改请求的接口名称来控制健康状态
+services:
+  helloworld:
+    image: registry.cn-shenzhen.aliyuncs.com/wqer/hellowrold:latest
+    container_name: helloworld
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health_check"]
+      interval: 5s
+      timeout: 5s
+      retries: 2
+      start_period: 1s
