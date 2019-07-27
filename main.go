@@ -63,6 +63,8 @@ func main() {
 					panic(err)
 				}
 			case e := <-messages:
+				log.Printf("接收到新的 Docker 事件：%+v\n", e)
+
 				markdown := ding_talk.MarkdownMessage{
 					MsgType: ding_talk.Markdown,
 					At: &ding_talk.At{
@@ -87,14 +89,14 @@ func main() {
 						"> ![screenshot](http://ypdan.com:9000/file/ok.jpeg)\n"+
 						"> ###### %s发布 [来自叮叮通知](https://open-doc.dingtalk.com)\n", e.ID[:8], e.Actor.Attributes["name"], timeFormat(e.Time))
 				default:
-					continue
-					//markdown.Markdown.Title = "什么情况"
-					//markdown.Markdown.Text = fmt.Sprintf("#### 神经\n"+
-					//	"> ID：%s\n\n"+
-					//	"> 名称：%s\n\n"+
-					//	"> 服务状态：%s\n\n"+
-					//	"> ![screenshot](http://ypdan.com:9000/file/ok.jpeg)\n"+
-					//	"> ###### %s发布 [来自叮叮通知](https://open-doc.dingtalk.com)\n", e.ID, e.Actor.Attributes["name"], e.Status, timeFormat(e.Time))
+					//continue
+					markdown.Markdown.Title = "其他通知"
+					markdown.Markdown.Text = fmt.Sprintf("#### 其他通知\n"+
+						"> ID：%s\n\n"+
+						"> 名称：%s\n\n"+
+						"> 服务状态：%s\n\n"+
+						"> ![screenshot](http://ypdan.com:9000/file/what.jpeg)\n"+
+						"> ###### %s发布 [来自叮叮通知](https://open-doc.dingtalk.com)\n", e.ID, e.Actor.Attributes["name"], e.Status, timeFormat(e.Time))
 				}
 				for _, c := range dingClients {
 					go func(client ding_talk.DingTalkClient) {
