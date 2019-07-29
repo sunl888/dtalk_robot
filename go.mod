@@ -9,8 +9,9 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/jinzhu/configor v1.1.1
-	github.com/joho/godotenv v1.3.0
+	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
-	github.com/smartystreets/goconvey v0.0.0-20190710185942-9d28bd7c0945
+	github.com/smartystreets/goconvey v0.0.0-20190710185942-9d28bd7c0945 // indirect
+	github.com/wq1019/ding_talk v1.0.2
 	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80 // indirect
 )

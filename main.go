@@ -9,10 +9,9 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/jinzhu/configor"
-	_ "github.com/joho/godotenv/autoload"
+	"github.com/wq1019/ding_talk"
 	"io"
 	"log"
-	"robots/ding_talk"
 	"sync"
 	"time"
 )
@@ -37,7 +36,10 @@ func main() {
 	var (
 		config Config
 		err    error
+		ctx    context.Context
 	)
+	ctx = context.Background()
+
 	cli, err := client.NewEnvClient()
 	checkErr(err)
 
@@ -47,7 +49,7 @@ func main() {
 	// ding ding clients
 	dingClients := ding_talk.NewClients(config.NotifyUrls)
 
-	messages, errs := cli.Events(context.Background(), types.EventsOptions{
+	messages, errs := cli.Events(ctx, types.EventsOptions{
 		Filters: buildFilters(config.Filters),
 	})
 	checkErr(err)
@@ -71,6 +73,12 @@ func main() {
 						IsAtAll: true,
 					},
 				}
+				var id string
+				if len(e.ID) > 8 {
+					id = e.ID[:8]
+				} else {
+					id = e.ID
+				}
 				switch e.Status {
 				case Unhealthy:
 					markdown.Markdown.Title = "程序爆炸啦"
@@ -78,25 +86,23 @@ func main() {
 						"> ID：%s\n\n"+
 						"> 名称：%s\n\n"+
 						"> 服务状态：unhealthy\n\n"+
-						"> ![screenshot](http://ypdan.com:9000/file/fail.jpg)\n"+
-						"> ###### %s发布 [来自叮叮通知](https://open-doc.dingtalk.com)\n", e.ID[:8], e.Actor.Attributes["name"], timeFormat(e.Time))
+						"> ###### %s发布 [来自优品单通知](https://ypdan.com)\n", id, e.Actor.Attributes["name"], timeFormat(e.Time))
 				case Healthy:
 					markdown.Markdown.Title = "程序恢复正常"
 					markdown.Markdown.Text = fmt.Sprintf("#### 程序已经恢复正常啦\n"+
 						"> ID：%s\n\n"+
 						"> 名称：%s\n\n"+
 						"> 服务状态：healthy\n\n"+
-						"> ![screenshot](http://ypdan.com:9000/file/ok.jpeg)\n"+
-						"> ###### %s发布 [来自叮叮通知](https://open-doc.dingtalk.com)\n", e.ID[:8], e.Actor.Attributes["name"], timeFormat(e.Time))
+						"> ###### %s发布 [来自优品单通知](https://ypdan.com)\n", id, e.Actor.Attributes["name"], timeFormat(e.Time))
 				default:
+
 					//continue
 					markdown.Markdown.Title = "其他通知"
 					markdown.Markdown.Text = fmt.Sprintf("#### 其他通知\n"+
 						"> ID：%s\n\n"+
 						"> 名称：%s\n\n"+
 						"> 服务状态：%s\n\n"+
-						"> ![screenshot](http://ypdan.com:9000/file/what.jpeg)\n"+
-						"> ###### %s发布 [来自叮叮通知](https://open-doc.dingtalk.com)\n", e.ID, e.Actor.Attributes["name"], e.Status, timeFormat(e.Time))
+						"> ###### %s发布 [来自优品单通知](https://ypdan.com)\n", id, e.Actor.Attributes["name"], e.Status, timeFormat(e.Time))
 				}
 				for _, c := range dingClients {
 					go func(client ding_talk.DingTalkClient) {
