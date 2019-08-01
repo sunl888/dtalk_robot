@@ -34,10 +34,13 @@ const (
 
 func main() {
 	var (
-		config Config
-		err    error
-		ctx    context.Context
+		config  Config
+		err     error
+		ctx     context.Context
+		timeout time.Duration
 	)
+	timeout = time.Second * 3
+
 	ctx = context.Background()
 
 	cli, err := client.NewEnvClient()
@@ -87,6 +90,8 @@ func main() {
 						"> 名称：%s\n\n"+
 						"> 服务状态：unhealthy\n\n"+
 						"> ###### %s发布 [来自优品单通知](https://ypdan.com)\n", id, e.Actor.Attributes["name"], timeFormat(e.Time))
+					// 重启服务
+					checkErr(cli.ContainerRestart(ctx, e.ID, &timeout))
 				case Healthy:
 					markdown.Markdown.Title = "程序恢复正常"
 					markdown.Markdown.Text = fmt.Sprintf("#### 程序已经恢复正常啦\n"+
